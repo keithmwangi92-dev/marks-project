@@ -1,0 +1,67 @@
+import pandas as pd
+
+def get_grade(mark):
+    if mark >= 80: return "A"
+    elif mark >= 75: return "A-"
+    elif mark >= 70: return "B+"
+    elif mark >= 65: return "B"
+    elif mark >= 60: return "B-"
+    elif mark >= 55: return "C+"
+    elif mark >= 50: return "C"
+    elif mark >= 45: return "C-"
+    elif mark >= 40: return "D+"
+    elif mark >= 35: return "D"
+    elif mark >= 30: return "D-"
+    else: return "E"
+
+#
+df = pd.read_excel("marks.xlsx")
+
+#
+name_col = "Name" if "Name" in df.columns else df.columns[0]
+subjects = [c for c in df.columns if c != name_col and "Grade" not in c and c not in ["Mean","Overall_Grade","Position"]]
+
+#Grades per subject
+for sub in subjects:
+    df[f"{sub}_Grade"] = df[sub].apply(get_grade)
+
+#Mean, Overall Grade, Position
+df["Mean"] = df[subjects].mean(axis=1).round(1)
+df["Overall_Grade"] = df["Mean"].apply(get_grade)
+df["Position"] = df["Mean"].rank(ascending=False, method="min").astype(int)
+
+#Arrange best to worst
+df = df.sort_values("Position").reset_index(drop=True)
+
+#Class Mean + Best Student Per Subject
+print("\n--- CLASS SUMMARY ---")
+class_means = df[subjects].mean().round(1)
+for sub in subjects:
+    mean_score = class_means[sub]
+    best_row = df.loc[df[sub].idxmax()]
+    print(f"{sub}: Class Mean = {mean_score} | Best = {best_row[name_col]} ({best_row[sub]})")
+
+overall_class_mean = df["Mean"].mean().round(1)
+overall_best = df.iloc[0]
+print(f"\nOverall Class Mean: {overall_class_mean}")
+print(f"Overall Best Student: {overall_best[name_col]} - Mean {overall_best['Mean']} ({overall_best['Overall_Grade']})")
+
+#Save 
+#
+cols_order = [name_col] + subjects + [f"{s}_Grade" for s in subjects] + ["Mean", "Overall_Grade", "Position"]
+df = df[cols_order]
+
+df.to_excel("report.xlsx", index=False)
+
+#summary sheet
+with pd.ExcelWriter("report.xlsx", engine="openpyxl", mode="a") as writer:
+    summary_df = pd.DataFrame({
+        "Subject": subjects + ["Overall"],
+        "Class_Mean": list(class_means.values) + [overall_class_mean],
+        "Best_Student": [df.loc[df[s].idxmax(), name_col] for s in subjects] + [overall_best[name_col]],
+        "Best_Score": [df[s].max() for s in subjects] + [df["Mean"].max()]
+    })
+    summary_df.to_excel(writer, sheet_name="Summary", index=False)
+
+print("\n REPORT READY: report.xlsx (Sheet 1 = ranked students, Sheet 2 = Summary)")
+print(df[[name_col, "Mean", "Overall_Grade", "Position"]].to_string(index=False))
