@@ -1,13 +1,16 @@
 # Marks Project
-A simple Python program that calculates student grades based on marks.
+A simple Python program that calculates and assigns grades based on student marks.
 
-This is my first project pushed to GitHub!
+## Project Structure
+- `grade` - Main program that calculates grades
+- `marks` - Contains student marks data
+- `marks.py` - Helper file
 
-## Features
-- Takes student marks as input
-- Calculates and displays the grade
-- Built with Python
+## How It Works
+1. Reads marks from the `marks` file
+2. The `grade` program processes the marks
+3. Outputs the final grade (A, B, C, etc.)
 
 ## How to Run
 ```bash
-python marks.py
+python grade
